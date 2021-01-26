@@ -27,8 +27,8 @@ const tooltip = d3.select('.tooltip');
 
 //  Part 1 - Создайте симуляцию с использованием forceCenter, forceX и forceCollide
 const simulation = d3.forceSimulation()
-    // ..
-
+    .force('center', d3.forceCenter().x(b_width / 2).y(b_height / 2))
+    
 
 d3.csv('data/netflix.csv').then(data=>{
     data = d3.nest().key(d=>d.title).rollup(d=>d[0]).entries(data).map(d=>d.value).filter(d=>d['user rating score']!=='NA');
@@ -38,71 +38,95 @@ d3.csv('data/netflix.csv').then(data=>{
     const years = data.map(d=>+d['release year']);
     let ratings = d3.nest().key(d=>d.rating).rollup(d=>d.length).entries(data);
     
-    
-    // Part 1 - задайте domain  для шкал
-    // ..
-    
+    x.domain([d3.min(years), d3.max(years)])
+    radius.domain([d3.min(rating), d3.max(rating)])
+    color.domain([d3.min(ratings), d3.max(ratings)])
+
+
     // Part 1 - создайте circles на основе data
     var nodes = bubble
         .selectAll("circle")
-        // ..
-    // добавьте обработчики событий mouseover и mouseout
-            // .on('mouseover', overBubble)
-            // .on('mouseout', outOfBubble);
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr("r", 2)
+        .attr("cx", function(d) {return x(d['release year'])})
+        .attr("cy", b_height / 2)
+        .style("fill", "#69b3a2")
+        .attr("stroke", "black")
+        .style("stroke-width", "0px")
+        .on('mouseover', overBubble)
+        .on('mouseout', outOfBubble);
 
     
     // Part 1 - передайте данные в симуляцию и добавьте обработчик события tick
-    // ..
+    simulation.nodes(data)
+    .force('collision', d3.forceCollide().radius(function(d) {
+        return radius(d['user rating score']);
+      }))
+      .force('x', d3.forceX().x(function(d) {
+        return x(d['release year']);
+      }))
+        .on("tick", function(d){
+            nodes
+            .attr("r", function(d) {
+                return radius(d['user rating score'])
+            })
+            .attr("cx", function(d){ return d.x; })
+            .style("fill", function(d) {
+                return color(d['rating'])
+            })
+            .attr("cy", function(d){ return d.y; })
+        });
 
-    // Part 1 - Создайте шаблон при помощи d3.pie на основе ratings
-    // ..
-    
-    // Part 1 - Создайте генератор арок при помощи d3.arc
-    // ..
-    
-    // Part 1 - постройте donut chart внутри donut
-    // ..
+    var radius_ = Math.min(d_width, d_height) / 2 
+    var pie = d3.pie()
+        .value(function(d) {return d.value; })
+    var data_ready = pie(ratings)
 
-    // добавьте обработчики событий mouseover и mouseout
-        //.on('mouseover', overArc)
-        //.on('mouseout', outOfArc);
+
+    donut
+        .selectAll('arcs')
+        .data(data_ready)
+        .enter()
+        .append('path')
+        .attr('d', d3.arc()
+            .innerRadius(100)        
+            .outerRadius(radius_)
+        )
+        .attr('fill', function(d){ return(color(d.data.key)) })
+        .attr("stroke", "black")
+        .style("stroke-width", 2)
+        .style("opacity", 0.7)
+        .on('mouseover', overArc)
+        .on('mouseout', outOfArc);
 
     function overBubble(d){
-        console.log(d)
-        // Part 2 - задайте stroke и stroke-width для выделяемого элемента   
-        // ..
+        console.log(d.x, d.y)
+        d3.select(this).attr('stroke', 'black').style("stroke-width", 2)
+        tooltip.text(d.title)
+        tooltip.style('display', 'inline')
+		.style('top', d.y + "px")
+        .style('left', d.x + "px")
         
-        // Part 3 - обновите содержимое tooltip с использованием классов title и year
-        // ..
-
-        // Part 3 - измените display и позицию tooltip
-        // ..
     }
     function outOfBubble(){
-        // Part 2 - обнулите stroke и stroke-width
-        // ..
+        d3.select(this).attr('stroke', 'black').style("stroke-width", 0)
             
-        // Part 3 - измените display у tooltip
-        // ..
+        tooltip.style('display', 'none')
     }
 
-    function overArc(d){
-        console.log(d)
-        // Part 2 - измените содержимое donut_lable
-        // ..
-        // Part 2 - измените opacity арки
-        // ..
+    function overArc(da){
+        console.log(da)
+        donut_lable.text(da.data.key)
+        d3.select(this).style('opacity', 0.3)
 
-        // Part 3 - измените opacity, stroke и stroke-width для circles в зависимости от rating
-        // ..
+        circles = d3.selectAll('circle').filter(function (d) {return d.rating!=da.data.key;}).style('opacity', 0.3)
+
     }
     function outOfArc(){
-        // Part 2 - измените содержимое donut_lable
-        // ..
-        // Part 2 - измените opacity арки
-        // ..
-
-        // Part 3 - верните opacity, stroke и stroke-width для circles
-        // ..
+        donut_lable.text('')
+        d3.select(this).style('opacity', 1)
+        d3.selectAll('circle').style('opacity', 1)
     }
 });

@@ -16,23 +16,40 @@ const colors = ['aqua', 'lime', 'gold', 'hotpink']
 // Шкалы для осей и окружностей
 const x = d3.scaleLinear().range([margin*2, width-margin]);
 const y = d3.scaleLinear().range([height-margin, margin]);
+const r = d3.scaleLinear().range([5, 15])
+const color = d3.scaleOrdinal().range(colors)
 
 const xLable = svg.append('text').attr('transform', `translate(${width/2}, ${height})`);
 const yLable = svg.append('text').attr('transform', `translate(${margin/2}, ${height/2}) rotate(-90)`);
 
-// Part 1: задайте атрибуты 'transform' для осей
-const xAxis = svg.append('g') // .attr('transform', ... 
-const yAxis = svg.append('g')// .attr('transform', ...
+const xAxis = svg.append('g').attr('transform',`translate(0,${height-30})`);
+const yAxis = svg.append('g').attr('transform',`translate(${margin *2 }, 0)`);
 
-
-// Part 2: Шкалы для цвета и радиуса объектов
-// const color = d3.scaleOrdinal()...
-// const r = d3.scaleSqrt()...
 
 // Part 2: для элемента select задайте options (http://htmlbook.ru/html/select) и установить selected для начального значения
-// d3.select('#radius').selectAll('option')
+d3.select('#radius').selectAll('option')
+    .data(params)
+    .enter()
+    .append('option')
+    .text(d => {return d})
+    .attr('value', function (d){return d})
+    .attr('selected', d => {if (d == 'gdp') return true})
 //         ...
+d3.select('#x').selectAll('option')
+    .data(params)
+    .enter()
+    .append('option')
+    .text(d => {return d})
+    .attr('value', function (d){return d})
+    .attr('selected', d => {if (d == 'fertility-rate') return true})
 
+d3.select('#y').selectAll('option')
+    .data(params)
+    .enter()
+    .append('option')
+    .text(d => {return d})
+    .attr('value', function (d){return d})
+    .attr('selected', d => {if (d == 'child-mortality') return true})
 
 // Part 3: select с options для осей
 // ...
@@ -42,13 +59,13 @@ loadData().then(data => {
 
     console.log(data)
 
-    // Part 2: получитe все уникальные значения из поля 'region' при помощи d3.nest и установите их как 'domain' цветовой шкалы
-    //let regions = d3.nest()...
-    //color.domain(regions);
-
     d3.select('.slider').on('change', newYear);
 
     d3.select('#radius').on('change', newRadius);
+
+    d3.select('#x').on('change', newX);
+
+    d3.select('#y').on('change', newY);
 
     // Part 3: подпишитесь на изменения селекторов параметров осей
     // ...
@@ -59,9 +76,22 @@ loadData().then(data => {
     }
 
     function newRadius(){
-        // Part 2: задайте логику обработки по аналогии с newYear
+        radius = this.value
+        updateChart()
     }
+
+    function newX(){
+        xParam = this.value
+        updateChart()
+    }
+
+    function newY(){
+        yParam = this.value
+        updateChart()
+    }
+
     function updateChart(){
+        console.log('updating')
         xLable.text(xParam);
         yLable.text(yParam);
         d3.select('.year').text(year);
@@ -72,17 +102,34 @@ loadData().then(data => {
 
         xAxis.call(d3.axisBottom(x));    
 
-        // Part 1: реализуйте отображение оси 'y'
-        // ...
-        
-        // Part 2: реализуйте обновление шкалы радиуса
-        // ...
+        let yRange = data.map(d=> +d[yParam][year]);
+        y.domain([d3.min(yRange), d3.max(yRange)]);
 
-        // Part 1, 2: реализуйте создание и обновление состояния точек
-        // svg.selectAll('circle').data(data)
+        yAxis.call(d3.axisLeft(y));    
+
+        let rRange = data.map(d => +d[radius][year]);
+        r.domain([0, d3.max(rRange)]);
+
+        let regions = data.map(d => d['region'])
+        color.domain([...new Set(regions)])
+
+        let circle = svg.selectAll('circle').data(data).enter().append('circle')
+
+        console.log(circle)
+
+        circle = svg.selectAll('circle').data(data)
+        circle.attr("r", function(d) {
+            return r(d[radius][year])
+        }).attr("cx", function(d) {
+            return x(d[xParam][year])
+        }).attr("cy", function(d) {
+            return y(d[yParam][year])
+        }).style("fill", function(d) {
+            return color(d['region'])
+        })
         //     ...
     }
-    
+
     updateChart();
 });
 
