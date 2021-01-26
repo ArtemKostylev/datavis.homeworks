@@ -2,9 +2,9 @@
 <html>
     <head>
         <title>HW 4</title>
-        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://d3js.org/d3.v6.min.js"></script>
         <script src="https://unpkg.com/d3-simple-slider"></script>
-        <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
         <div id="year"></div>
@@ -194,7 +194,7 @@
                         ...Object.values(rest).map(v=>v.find(r=>r.geo===d.geo)).reduce((o, d, i)=>({...o, [Object.keys(rest)[i]]: d }), {})
                     }
                 })
-                const world = await d3.json('http://enjalot.github.io/wwsd/data/world/world-110m.geojson');
+                const world = await d3.json('https://enjalot.github.io/wwsd/data/world/world-110m.geojson');
                 return {data, world}
             }
         
